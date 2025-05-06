@@ -1,21 +1,22 @@
-from fastapi import FastAPI, HTTPException
+import os
+from fastapi import FastAPI, HTTPException, Depends
 from pydantic import BaseModel
 from typing import List
 from sqlalchemy import create_engine, Column, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, Session
+from dotenv import load_dotenv
 
-# Database configuration
-DATABASE_URL = "mysql+pymysql://username:password@localhost:3306/mydatabase"
+# Load .env file if present
+load_dotenv()
+
+# Database configuration from environment
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 # SQLAlchemy setup
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
-
-#test abc
-
-#tesdt ulit
 
 # Define table model
 class Item(Base):
@@ -24,6 +25,7 @@ class Item(Base):
     name = Column(String(255), nullable=False)
     description = Column(String(255), nullable=True)
 
+# Create tables
 Base.metadata.create_all(bind=engine)
 
 # Pydantic model
@@ -47,7 +49,7 @@ def get_db():
 
 # POST endpoint to create item
 @app.post("/items/", response_model=ItemOut)
-def create_item(item: ItemCreate, db=next(get_db())):
+def create_item(item: ItemCreate, db: Session = Depends(get_db)):
     db_item = Item(**item.dict())
     db.add(db_item)
     db.commit()
@@ -56,6 +58,5 @@ def create_item(item: ItemCreate, db=next(get_db())):
 
 # GET endpoint to list all items
 @app.get("/items/", response_model=List[ItemOut])
-def read_items(db=next(get_db())):
-    items = db.query(Item).all()
-    return items
+def read_items(db: Session = Depends(get_db)):
+    return db.query(Item).all()

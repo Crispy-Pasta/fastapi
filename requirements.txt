@@ -2,4 +2,5 @@ fastapi
 uvicorn
 sqlalchemy
 pymysql
-python-dotenv 
+python-dotenv
+cryptography>=3.3
